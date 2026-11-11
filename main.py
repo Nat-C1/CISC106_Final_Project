@@ -6,6 +6,7 @@ from cryptography.hazmat.primitives import padding
 import base64
 from Crypto.Hash import MD5
 from Crypto.Hash import SHA256
+from bakery import assert_equal
 
 # ==========================================
 # RSA CONSTANTS
@@ -49,13 +50,14 @@ class State:
 
 @route
 def index(state: State) -> Page:
+    
     return Page(state, [
         Header("Cryptography Website"),
 
         Text("Enter one or more messages, with each message on a new line."),
 
         Header("Messages", 5),
-        TextArea("message_input", state.message_input),
+        TextArea("message_input"),
 
         Header("Encryption / Decryption Key", 5),
         Text("Key formats:"), '\n',
@@ -66,25 +68,27 @@ def index(state: State) -> Page:
         Text("MD-5: No key required"), '\n',
         Text("SHA-256: No key required"), '\n',
 
-        TextBox("key", ""),
+        TextBox("key"),
 
         Header("Algorithm", 5),
         SelectBox(
             "algorithm",
-            ["RSA", "Caesar", "MD-5", "AES", "SHA-256"],
-            state.algorithm
-        ),
+            ["RSA", "Caesar", "MD-5", "AES", "SHA-256"], state.algorithm),
 
         Header("Operation", 5),
         SelectBox(
             "encrypt",
-            ["Encrypt", "Decrypt"],
-            state.encrypt
-        ),
+            ["Encrypt", "Decrypt"], state.encrypt),
 
-        Button("Execute", execute)
+        Button("Execute", update_state)
     ])
 
+@route
+def update_state(state, message_input, key, algorithm, encrypt):
+    state.message_input = message_input
+    state.algorithm = algorithm
+    state.encrypt = encrypt
+    return execute(state, key)
 
 # ============================================================================================================================
 # ============================================================================================================================
@@ -136,17 +140,12 @@ def ceasar(state: State) -> Page:
 
     for message in state.messages:
         if state.encrypt == "Encrypt":
-            message.ciphertext = ceasar_encrypt_text(
-                message.plaintext,
-                int(message.key)
-            )
+            message.ciphertext = ceasar_encrypt_text(message.plaintext, int(message.key))
         else:
-            message.ciphertext = ceasar_decrypt_text(
-                message.plaintext,
-                int(message.key)
-            )
+            message.ciphertext = ceasar_decrypt_text(message.plaintext, int(message.key))
 
         components.append(Text(message.ciphertext))
+        components.append('\n')
 
     components.append(Button("Back to Main Page", index))
 
@@ -164,7 +163,7 @@ def ceasar(state: State) -> Page:
 
 # RSA ENCRYPTION
 
-def rsa_encrypt_text(message: Message):
+def rsa_encrypt_text(state:State, message: Message):
     n = RSA_N
     e = int(message.public_key)
 
@@ -179,9 +178,10 @@ def rsa_encrypt_text(message: Message):
 
 # RSA DECRYPTION
 
-def rsa_decrypt_text(message: Message):
+def rsa_decrypt_text(state:State, message: Message):
     n = RSA_N
     d = int(message.private_key)
+    
 
     plaintext = ""
 
@@ -209,10 +209,10 @@ def rsa_page(state: State) -> Page:
     for message in state.messages:
 
         if state.encrypt == "Encrypt":
-            rsa_encrypt_text(message)
+            rsa_encrypt_text(state, message)
 
         else:
-            rsa_decrypt_text(message)
+            rsa_decrypt_text(state, message)
 
         components.append(Text("Plaintext: " + message.plaintext))
         components.append('\n')
@@ -268,7 +268,7 @@ def aes_decrypt_text(message: Message):
 
     key = message.key.encode("utf-8")
 
-    ciphertext = base64.b64decode(message.ciphertext)
+    ciphertext = base64.b64decode(message.plaintext)
 
     cipher = Cipher(
         algorithms.AES(key),
@@ -424,16 +424,11 @@ def sha256_page(state: State) -> Page:
 # ============================================================================================================================
 # ============================================================================================================================
 
-def format_message(state: State, message_input: str, key: str,
-                   algorithm: str, encrypt: str) -> State:
-
-    state.message_input = message_input
-    state.algorithm = algorithm
-    state.encrypt = encrypt
+def format_message(state: State, key:str) -> State:
 
     state.messages = []
 
-    for message_text in message_input.split("\n"):
+    for message_text in state.message_input.split("\n"):
 
         if message_text.strip() != "":
 
@@ -445,13 +440,19 @@ def format_message(state: State, message_input: str, key: str,
                 private_key=""
             )
 
-            if encrypt == "Encrypt":
-                message.plaintext = message_text
+            message.plaintext = message_text
 
-            else:
-                message.ciphertext = message_text
-
+            
             state.messages.append(message)
+
+        if state.algorithm == "RSA":
+            if state.encrypt == "Encrypt":
+                message.public_key = key
+                message.private_key = calculate_private_key(int(key))
+
+            elif state.encrypt == "Decrypt":
+                message.private_key = key
+                message.ciphertext = message_text
 
     return state
 
@@ -460,30 +461,22 @@ def format_message(state: State, message_input: str, key: str,
 # ==========================================
 
 @route
-def execute(state: State, message_input: str, key: str,
-            algorithm: str, encrypt: str) -> Page:
-    message = format_message(state, message_input, key, algorithm, encrypt)
+def execute(state: State, key: str) -> Page:
+    state = format_message(state,key)
 
-    if algorithm == "RSA":
-        if encrypt == "Encrypt":
-            message.public_key = key
-            message.private_key = calculate_private_key(int(key))
-
-        else:
-            message.private_key = key
-            message.ciphertext = message_input
+    if state.algorithm == "RSA":
         return rsa_page(state)
 
-    elif algorithm == "Caesar":
+    elif state.algorithm == "Caesar":
         return ceasar(state)
 
-    elif algorithm == "MD-5":
+    elif state.algorithm == "MD-5":
         return md5_page(state)
 
-    elif algorithm == "AES":
+    elif state.algorithm == "AES":
         return aes_page(state)
 
-    elif algorithm == "SHA-256":
+    elif state.algorithm == "SHA-256":
         return sha256_page(state)
 
     return index(state)
@@ -501,7 +494,4 @@ start_server(
         ""
     )
 )
-
-
-
 
