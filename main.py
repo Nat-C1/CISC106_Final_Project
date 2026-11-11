@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 import base64
-import hashlib
-
+from Crypto.Hash import MD5
+from Crypto.Hash import SHA256
 
 # ==========================================
 # RSA CONSTANTS
@@ -344,7 +344,7 @@ def md5_text(message: Message):
 
     plaintext = message.plaintext.encode("utf-8")
 
-    message.ciphertext = hashlib.md5(plaintext).hexdigest()
+    message.ciphertext = MD5.new(plaintext).hexdigest()
 
 @route
 def md5_page(state: State) -> Page:
@@ -387,7 +387,7 @@ def sha256_text(message: Message):
 
     plaintext = message.plaintext.encode("utf-8")
 
-    message.ciphertext = hashlib.sha256(plaintext).hexdigest()
+    message.ciphertext = SHA256.new(plaintext).hexdigest()
 
 @route
 def sha256_page(state: State) -> Page:
