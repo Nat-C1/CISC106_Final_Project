@@ -1,4 +1,4 @@
 dataclasses
 cryptography
-hashlib
+pycryptodome
 base64
