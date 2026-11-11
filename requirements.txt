@@ -1,4 +1,3 @@
 dataclasses
 cryptography
 pycryptodome
-base64
