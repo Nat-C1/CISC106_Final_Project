@@ -491,9 +491,9 @@ set_site_information('Nate Cheek',
     including RSA, Ceasar Cipher, AES-ECB, MD-5, and SHA-256. 
         Multiple messages are able to be encrypted at once with the same key.''',
                      
-'sources were personal knowledge of the algorithms and thefile named "GPT_LOG.txt" in the repository',
+'sources were personal knowledge of the algorithms and thefile named "GPT_LOG.pdf" in the repository',
                      
-                     'Planning is accessible in repository in ADD NAMES',
+                     'Planning is accessible in repository in "CS106 Final Planning Document ____"',
                      
                      'NEEDED?')
 
