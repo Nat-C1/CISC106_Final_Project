@@ -50,6 +50,9 @@ class State:
 
 @route
 def index(state: State) -> Page:
+    """The main page of the website
+Args: state - state of website
+Returns: Main pages to take in the input for all of the other pages"""
     
     return Page(state, [
         Header("Cryptography Website"),
@@ -84,7 +87,17 @@ def index(state: State) -> Page:
     ])
 
 @route
-def update_state(state, message_input, key, algorithm, encrypt):
+def update_state(state:State, message_input:str, key:str, algorithm:str, encrypt:str):
+    """takes the arguments from the main page and updates the state, error occur if state updates from main page fields
+Args: state - the state of website
+message_input, the message input from main page
+key - string from the key field on main page
+algorithm - from the select field on main page
+encrypt - from the second select box
+
+Returns: execute route, and updated state"""
+
+
     state.message_input = message_input
     state.algorithm = algorithm
     state.encrypt = encrypt
@@ -101,6 +114,13 @@ def update_state(state, message_input, key, algorithm, encrypt):
 # =====================================================================================================================
 
 def ceasar_encrypt_text(string: str, rotate: int) -> str:
+    """encrypts the string input by rotating it the amount indicated
+Args:
+    string: message to be rotated
+    rotate: amount to rotate
+Returns:
+    Rotated string"""
+    
     rotated = ""
 
     for char in string:
@@ -116,6 +136,13 @@ def ceasar_encrypt_text(string: str, rotate: int) -> str:
 
 
 def ceasar_decrypt_text(cipher: str, rotate: int) -> str:
+    """decrypts the string by rotating it the amount indicated
+Atgs:
+    cipher: encrypted text
+    rotate: amount to rotate
+Returns:
+    unencrypted string"""
+    
     normal = ""
 
     for char in cipher:
@@ -132,6 +159,12 @@ def ceasar_decrypt_text(cipher: str, rotate: int) -> str:
 
 @route
 def ceasar(state: State) -> Page:
+    """takes in the state of the website and produces the output of the options in the state
+Args:
+    state: website state
+Returns:
+    a page displaying whether it should encrypt or decrypt, the key, and the rotated string"""
+    
     components = [
         Header("Caesar Cipher Results"),
         Text("Operation: " + state.encrypt),
@@ -164,6 +197,13 @@ def ceasar(state: State) -> Page:
 # RSA ENCRYPTION
 
 def rsa_encrypt_text(state:State, message: Message):
+    """takes in the state and the message to be encrypted
+Args:
+    state: website state
+    message: message to be encrypted
+Returns:
+    the encrypted message as a sring of ',' seperated #'s"""
+    
     n = RSA_N
     e = int(message.public_key)
 
@@ -179,6 +219,13 @@ def rsa_encrypt_text(state:State, message: Message):
 # RSA DECRYPTION
 
 def rsa_decrypt_text(state:State, message: Message):
+    """takes in the state and the message to be decrypted
+Args:
+    state: website state
+    message: encrypted message as a sring of ',' seperated #'s
+Returns:
+    the unencrypted message"""
+    
     n = RSA_N
     d = int(message.private_key)
     
@@ -198,6 +245,11 @@ def rsa_decrypt_text(state:State, message: Message):
 
 @route
 def rsa_page(state: State) -> Page:
+    """takes in the state and produces a page of the results of running the correct above function
+Args:
+    state: website state
+Returns:
+    a page of the given message, the other half of the message, the key(s), and which way it was sent"""
 
     components = [
         Header("RSA Results"),
@@ -238,6 +290,11 @@ def rsa_page(state: State) -> Page:
 # =====================================================================================================================
 
 def aes_encrypt_text(message: Message):
+    """Takes in the message to be encrypted and returns the cipher text
+Args:
+    message: Message dataclass with needed information for encryption
+Returns:
+    the encrypted text added to the message dataclass"""
 
     key = message.key.encode("utf-8")
 
@@ -248,54 +305,44 @@ def aes_encrypt_text(message: Message):
         + padder.finalize()
     )
 
-    cipher = Cipher(
-        algorithms.AES(key),
-        modes.ECB()
-    )
+    cipher = Cipher(algorithms.AES(key), modes.ECB())
 
     encryptor = cipher.encryptor()
 
-    ciphertext = (
-        encryptor.update(padded_text)
-        + encryptor.finalize()
-    )
+    ciphertext = (encryptor.update(padded_text) + encryptor.finalize())
 
-    message.ciphertext = base64.b64encode(
-        ciphertext
-    ).decode("utf-8")
+    message.ciphertext = base64.b64encode(ciphertext).decode("utf-8")
 
 def aes_decrypt_text(message: Message):
-
+    """Takes in the message to be decrypted
+Args:
+    message: Message dataclass with needed information to be decrypted
+Returns:
+    updated Message dataclass"""
     key = message.key.encode("utf-8")
 
     ciphertext = base64.b64decode(message.plaintext)
 
-    cipher = Cipher(
-        algorithms.AES(key),
-        modes.ECB()
-    )
+    cipher = Cipher(algorithms.AES(key), modes.ECB())
 
     decryptor = cipher.decryptor()
 
-    padded_text = (
-        decryptor.update(ciphertext)
-        + decryptor.finalize()
-    )
+    padded_text = (decryptor.update(ciphertext) + decryptor.finalize())
 
-    unpadder = padding.PKCS7(
-        algorithms.AES.block_size
-    ).unpadder()
+    unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
 
-    plaintext = (
-        unpadder.update(padded_text)
-        + unpadder.finalize()
-    )
+    plaintext = (unpadder.update(padded_text) + unpadder.finalize())
 
     message.plaintext = plaintext.decode("utf-8")
 
 @route
 def aes_page(state: State) -> Page:
-
+    """A page that shows the results of the earlier 2 functions, and the information in the state dataclass
+Args:
+    state: total website state
+Returns:
+    a page with the key shown, both messages, an error page for an incorrect key"""
+    
     components = [
         Header("AES Results"),
         Text("Operation: " + state.encrypt), '\n',
@@ -341,14 +388,22 @@ def aes_page(state: State) -> Page:
 # =====================================================================================================================
 
 def md5_text(message: Message):
-
+    """takes the message and returns the hash
+Args: message dataclass with required fields
+Returns: updated dataclass with hash"""
+    
     plaintext = message.plaintext.encode("utf-8")
 
     message.ciphertext = MD5.new(plaintext).hexdigest()
 
 @route
 def md5_page(state: State) -> Page:
-
+    """A page displaying the information of the state dataclass and above function
+Args:
+    state: state of website
+Returns:
+    a page with the algorithm name, hash, and message"""
+    
     components = [
         Header("MD5 Results"),
         Text("Algorithm: MD5"), '\n',
@@ -384,14 +439,24 @@ def md5_page(state: State) -> Page:
 # =====================================================================================================================
 
 def sha256_text(message: Message):
-
+    """produces a SHA-256 hash of the given information
+Args:
+    message: message dataclass with needed fields
+Returns:
+    updated dataclass with hash added"""
+    
     plaintext = message.plaintext.encode("utf-8")
 
     message.ciphertext = SHA256.new(plaintext).hexdigest()
 
 @route
 def sha256_page(state: State) -> Page:
-
+    """Page displaying the information when SHA-256 is chosen
+Args:
+    state: state of website
+Returns:
+    Page with algorithm title, plaintext, and hash"""
+    
     components = [
         Header("SHA-256 Results"),
         Text("Algorithm: SHA-256"), '\n',
@@ -425,7 +490,13 @@ def sha256_page(state: State) -> Page:
 # =====================================================================================================================
 
 def format_message(state: State, key:str) -> State:
-
+    """formats the message dataclass and adds them to the state.messages field
+Args:
+    state: state of website
+    key: encryption key
+Returns:
+    state of the website, with state.messages formatted correctly"""
+    
     state.messages = []
 
     for message_text in state.message_input.split("\n"):
@@ -462,6 +533,13 @@ def format_message(state: State, key:str) -> State:
 
 @route
 def execute(state: State, key: str) -> Page:
+    """decides which page to run
+Args:
+    state: website state
+    key: encryption key
+Returns:
+    the correct page for the algorithm chosen"""
+    
     state = format_message(state,key)
 
     if state.algorithm == "RSA":
@@ -499,4 +577,5 @@ set_site_information('Nate Cheek',
 
 
 start_server(State([],"","",""))
+
 
